@@ -47,7 +47,7 @@ pub struct SegmentReader {
     fieldnorm_readers: FieldNormReaders,
 
     store_file: FileSlice,
-    delete_bitset_opt: Option<DeleteBitSet>,
+    pub(crate) delete_bitset_opt: Option<DeleteBitSet>,
     schema: Schema,
 }
 

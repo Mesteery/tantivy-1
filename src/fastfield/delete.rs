@@ -38,10 +38,38 @@ pub fn write_delete_bitset(
     Ok(())
 }
 
+/// Merges two `DeleteBitSet` into a new one.
+pub fn merge_delete_bitset(left: &DeleteBitSet, right: &DeleteBitSet) -> DeleteBitSet {
+    let left_data = left.data.as_slice();
+    let right_data = right.data.as_slice();
+
+    let mut merged = vec![];
+    merged.resize(left_data.len().max(right_data.len()), 0);
+
+    for (merged_el, left_el) in merged.iter_mut().zip(left_data.iter()) {
+        *merged_el = *left_el;
+    }
+
+    for (merged_el, right_el) in merged.iter_mut().zip(right_data.iter()) {
+        *merged_el |= *right_el;
+    }
+
+    let num_deleted: usize = merged
+        .as_slice()
+        .iter()
+        .map(|b| b.count_ones() as usize)
+        .sum();
+
+    DeleteBitSet {
+        data: OwnedBytes::new(merged),
+        num_deleted,
+    }
+}
+
 /// Set of deleted `DocId`s.
 #[derive(Clone)]
 pub struct DeleteBitSet {
-    data: OwnedBytes,
+    pub(crate) data: OwnedBytes,
     num_deleted: usize,
 }
 
@@ -110,6 +138,8 @@ impl HasLen for DeleteBitSet {
 
 #[cfg(test)]
 mod tests {
+    use crate::fastfield::delete::merge_delete_bitset;
+
     use super::DeleteBitSet;
     use common::HasLen;
 
@@ -140,5 +170,32 @@ mod tests {
             assert_eq!(delete_bitset.is_deleted(doc), !delete_bitset.is_alive(doc));
         }
         assert_eq!(delete_bitset.len(), 2);
+    }
+
+    #[test]
+    fn test_delete_bitset_merge() {
+        let delete_bitset1 = DeleteBitSet::for_test(&[1, 9], 10);
+        let delete_bitset2 = DeleteBitSet::for_test(&[1, 5, 9, 14], 15);
+        let delete_bitset = merge_delete_bitset(&delete_bitset1, &delete_bitset2);
+        assert!(delete_bitset.is_alive(0));
+        assert!(delete_bitset.is_deleted(1));
+        assert!(delete_bitset.is_alive(2));
+        assert!(delete_bitset.is_alive(3));
+        assert!(delete_bitset.is_alive(4));
+        assert!(delete_bitset.is_deleted(5));
+        assert!(delete_bitset.is_alive(6));
+        assert!(delete_bitset.is_alive(6));
+        assert!(delete_bitset.is_alive(7));
+        assert!(delete_bitset.is_alive(8));
+        assert!(delete_bitset.is_deleted(9));
+        assert!(delete_bitset.is_alive(10));
+        assert!(delete_bitset.is_alive(11));
+        assert!(delete_bitset.is_alive(12));
+        assert!(delete_bitset.is_alive(13));
+        assert!(delete_bitset.is_deleted(14));
+        assert!(delete_bitset.is_alive(15));
+        for doc in 0..15 {
+            assert_eq!(delete_bitset.is_deleted(doc), !delete_bitset.is_alive(doc));
+        }
     }
 }

@@ -152,11 +152,13 @@ impl BitSet {
     }
 
     /// Returns the number of elements in the `BitSet`.
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
 
     /// Inserts an element in the `BitSet`
+    #[inline]
     pub fn insert(&mut self, el: u32) {
         // we do not check saturated els.
         let higher = el / 64u32;
@@ -169,6 +171,7 @@ impl BitSet {
     }
 
     /// Returns true iff the elements is in the `BitSet`.
+    #[inline]
     pub fn contains(&self, el: u32) -> bool {
         self.tinyset(el / 64u32).contains(el % 64)
     }
@@ -186,6 +189,7 @@ impl BitSet {
             .map(|delta_bucket| bucket + delta_bucket as u32)
     }
 
+    #[inline]
     pub fn max_value(&self) -> u32 {
         self.max_value
     }
