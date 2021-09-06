@@ -69,7 +69,7 @@ pub fn merge_delete_bitset(left: &DeleteBitSet, right: &DeleteBitSet) -> DeleteB
 /// Set of deleted `DocId`s.
 #[derive(Clone)]
 pub struct DeleteBitSet {
-    pub(crate) data: OwnedBytes,
+    data: OwnedBytes,
     num_deleted: usize,
 }
 
