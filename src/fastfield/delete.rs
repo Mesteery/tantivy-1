@@ -1,6 +1,5 @@
 use crate::directory::FileSlice;
 use crate::directory::OwnedBytes;
-use crate::directory::WritePtr;
 use crate::space_usage::ByteCount;
 use crate::DocId;
 use common::BitSet;
@@ -16,7 +15,7 @@ use std::io::Write;
 pub fn write_delete_bitset(
     delete_bitset: &BitSet,
     max_doc: u32,
-    writer: &mut WritePtr,
+    writer: &mut dyn Write,
 ) -> io::Result<()> {
     let mut byte = 0u8;
     let mut shift = 0u8;
@@ -74,6 +73,15 @@ pub struct DeleteBitSet {
 }
 
 impl DeleteBitSet {
+    pub(crate) fn from_bitset(bitset: &BitSet, max_doc: u32) -> DeleteBitSet {
+        let mut out = vec![];
+        write_delete_bitset(&bitset, max_doc, &mut out).unwrap();
+
+        DeleteBitSet {
+            data: OwnedBytes::new(out),
+            num_deleted: bitset.len(),
+        }
+    }
     #[cfg(test)]
     pub(crate) fn for_test(docs: &[DocId], max_doc: u32) -> DeleteBitSet {
         use crate::directory::{Directory, RamDirectory, TerminatingWrite};
